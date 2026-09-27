@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+venv/
+
+# Secrets
+.env
+
+# Local vector database
+chroma_db/
+
+# Local PDF files
+data/*.pdf
