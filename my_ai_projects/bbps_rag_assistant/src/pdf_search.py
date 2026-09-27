@@ -1,6 +1,18 @@
 import chromadb
+import os
 from sentence_transformers import SentenceTransformer
 
+
+PROJECT_DIR = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
+
+CHROMA_DIR = os.path.join(
+    PROJECT_DIR,
+    "chroma_db"
+)
 
 # 1. Load the same embedding model
 model = SentenceTransformer("all-MiniLM-L6-v2")
@@ -8,9 +20,12 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # 2. Connect to our ChromaDB
 client = chromadb.PersistentClient(
-    path="./chroma_db"
+    path=CHROMA_DIR
 )
 
+collection = client.get_collection(
+    name="payment_pdf_knowledge"
+)
 
 # 3. Get the PDF knowledge collection
 collection = client.get_collection(
@@ -19,7 +34,7 @@ collection = client.get_collection(
 
 
 # 4. Ask a question
-question = "What is the process for handling a pending BBPS transaction?"
+question = input("\nAsk your BBPS question: ")
 
 
 # 5. Convert question into an embedding

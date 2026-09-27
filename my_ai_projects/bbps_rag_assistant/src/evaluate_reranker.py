@@ -58,37 +58,46 @@ evaluation_data = [
 
     {
         "question": "What is Fetch and Pay in BBPS?",
-        "source": "Procedural_Guidelines_BBPS_V6_November_2025_Website_b15d06fcb5.pdf",
-        "page": 17,
-        "chunk": 6
+        "expected_evidence": [
+            "Fetch and Pay",
+            "financial transaction post fetching the bill"
+        ]
     },
 
     {
         "question": "What is Validation and Pay in BBPS?",
-        "source": "Procedural_Guidelines_BBPS_V6_November_2025_Website_b15d06fcb5.pdf",
-        "page": 17,
-        "chunk": 6
+        "expected_evidence": [
+            "Validation and Pay",
+            "financial transaction post validation of their identifier"
+        ]
     },
 
     {
         "question": "What are the different biller transaction flows in BBPS?",
-        "source": "Procedural_Guidelines_BBPS_V6_November_2025_Website_b15d06fcb5.pdf",
-        "page": 17,
-        "chunk": 6
+        "expected_evidence": [
+            "Fetch and Pay",
+            "Validation and Pay",
+            "Validation and Pay, basis plan",
+            "Direct Pay"
+        ]
     },
 
     {
         "question": "What is One-time Pay in BBPS?",
-        "source": "Procedural_Guidelines_BBPS_V6_November_2025_Website_b15d06fcb5.pdf",
-        "page": 17,
-        "chunk": 4
+        "expected_evidence": [
+            "One-time pay",
+            "unique identifier",
+            "proceeds to initiate the bill payment"
+        ]
     },
 
     {
         "question": "What is Register and Pay in BBPS?",
-        "source": "Procedural_Guidelines_BBPS_V6_November_2025_Website_b15d06fcb5.pdf",
-        "page": 17,
-        "chunk": 5
+        "expected_evidence": [
+            "Register and Pay",
+            "standing instructions",
+            "recurring payments"
+        ]
     }
 ]
 
@@ -110,16 +119,36 @@ reranker_reciprocal_ranks = []
 
 
 # ==========================================
-# 6. HELPER FUNCTION
+# 6. HELPER FUNCTIONS
 # ==========================================
 
-def is_correct(metadata, expected):
+def normalize_text(text):
 
-    return (
-        metadata["source"] == expected["source"]
-        and metadata["page"] == expected["page"]
-        and metadata["chunk"] == expected["chunk"]
+    return " ".join(
+        text.lower().split()
     )
+
+
+def contains_expected_evidence(
+    document,
+    expected_evidence
+):
+
+    document_normalized = normalize_text(
+        document
+    )
+
+    for evidence in expected_evidence:
+
+        evidence_normalized = normalize_text(
+            evidence
+        )
+
+        if evidence_normalized not in document_normalized:
+
+            return False
+
+    return True
 
 
 # ==========================================
@@ -151,7 +180,9 @@ for item in evaluation_data:
     )
 
     documents = results["documents"][0]
+
     metadatas = results["metadatas"][0]
+
     distances = results["distances"][0]
 
 
@@ -161,17 +192,18 @@ for item in evaluation_data:
 
     vector_rank = None
 
-    for rank, metadata in enumerate(
-        metadatas,
+    for rank, document in enumerate(
+        documents,
         start=1
     ):
 
-        if is_correct(
-            metadata,
-            item
+        if contains_expected_evidence(
+            document,
+            item["expected_evidence"]
         ):
 
             vector_rank = rank
+
             break
 
 
@@ -182,12 +214,15 @@ for item in evaluation_data:
     if vector_rank is not None:
 
         if vector_rank <= 1:
+
             vector_hits_at_1 += 1
 
         if vector_rank <= 3:
+
             vector_hits_at_3 += 1
 
         if vector_rank <= 5:
+
             vector_hits_at_5 += 1
 
         vector_reciprocal_ranks.append(
@@ -214,6 +249,7 @@ for item in evaluation_data:
             ]
         )
 
+
     scores = reranker.predict(
         pairs
     )
@@ -225,11 +261,14 @@ for item in evaluation_data:
 
     reranked = []
 
-    for i in range(len(documents)):
+    for i in range(
+        len(documents)
+    ):
 
         reranked.append(
             {
                 "score": float(scores[i]),
+                "document": documents[i],
                 "metadata": metadatas[i]
             }
         )
@@ -256,12 +295,13 @@ for item in evaluation_data:
         start=1
     ):
 
-        if is_correct(
-            result["metadata"],
-            item
+        if contains_expected_evidence(
+            result["document"],
+            item["expected_evidence"]
         ):
 
             reranker_rank = rank
+
             break
 
 
@@ -272,12 +312,15 @@ for item in evaluation_data:
     if reranker_rank is not None:
 
         if reranker_rank <= 1:
+
             reranker_hits_at_1 += 1
 
         if reranker_rank <= 3:
+
             reranker_hits_at_3 += 1
 
         if reranker_rank <= 5:
+
             reranker_hits_at_5 += 1
 
         reranker_reciprocal_ranks.append(
@@ -323,6 +366,7 @@ vector_hit_5 = (
     vector_hits_at_5 / total
 )
 
+
 reranker_hit_1 = (
     reranker_hits_at_1 / total
 )
@@ -334,6 +378,7 @@ reranker_hit_3 = (
 reranker_hit_5 = (
     reranker_hits_at_5 / total
 )
+
 
 vector_mrr = (
     sum(vector_reciprocal_ranks) / total
@@ -351,6 +396,7 @@ reranker_mrr = (
 print("\n\n====================================")
 print("RAG RETRIEVAL EVALUATION")
 print("====================================")
+
 
 print("\nVECTOR SEARCH")
 

@@ -61,10 +61,9 @@ collection = client.get_or_create_collection(
 # --------------------------------------------------
 
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=100
+    chunk_size=800,
+    chunk_overlap=150
 )
-
 
 # --------------------------------------------------
 # 6. Process every PDF
